@@ -1,16 +1,16 @@
 var
 frame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame,
-ctx,canvas, controls = new Controls(), circle = 2* Math.PI;
+ctx,canvas, controls = new Controls(), circle = 2* Math.PI, lastUpdate;
 
 function Player(x, y, direction){
 	this.x = x;
 	this.y = y;
 	this.direction = direction;
-	this.speed = 0.5; //pixels per millisecond
-	this.rotSpeed = Math.PI/100;//angle per millisecond
+	this.speed = 0.05; //pixels per millisecond
+	this.rotSpeed = Math.PI/1000;//angle per millisecond
 }
 
-Player.prototype.update = function(dt){
+Player.prototype.update = function(dt, map){
 	if(controls.buttons['left']){
 		this.direction -= (this.rotSpeed * dt);
 	}
@@ -24,33 +24,38 @@ Player.prototype.update = function(dt){
 		this.direction = circle;
 	}
 	if(controls.buttons['up']){
-		//move character forward
+		let distance = this.speed * dt;
+		let newX = this.x + distance * Math.sin(this.direction);
+		let newY = this.y - distance * Math.cos(this.direction);
+		if(map.isEmpty( Math.floor(newX / 64) , Math.floor(newY / 64) )){
+			this.x = newX;
+			this.y = newY;
+		}
 	}
 }
 
 function Map(size){
 	this.size = size;
-	this.wallGrid = [];
+	this.wallGrid = new Array();
 	for(let i = 0; i<size; i++){
-		let temp = [];
+		this.wallGrid.push(new Array(size));
 		for(let j=0; j<size; j++){
-			temp.push(0);
+			this.wallGrid[i][j] = 0;
 		}
-		this.wallGrid.push(temp);
 	}
 }
 
 Map.prototype.isEmpty = function(x, y){
-	if(x<0 || y<0 || x>=this.size || y>=this.size || this.wallGrid[x,y] != 1)
+	if(x<0 || y<0 || x>=this.size || y>=this.size || this.wallGrid[x][y] == 1)
 		return false;
 	return true;
 }
 
 Map.prototype.randomize = function(){
 	for(let i=1; i<this.size; i++){
-		for(let j=1; j<this.size; j++){
+		for(let j=0; j<this.size; j++){
 			let wall = Math.random();
-			this.wallGrid[i,j] = wall>0.3? 0 : 1;
+			this.wallGrid[i][j] = wall>0.3? 0 : 1;
 		}
 	}
 }
@@ -82,19 +87,20 @@ function init(){
 	document.addEventListener('keydown', controls.onKey.bind(controls, true), false);
 	document.addEventListener('keyup', controls.onKey.bind(controls, false), false);
 	canvas = document.getElementsByTagName('canvas')[0];
-	canvas.width = 500;
+	canvas.width = 300;
 	canvas.height = 300;
 	ctx = canvas.getContext('2d');
 	GameStateStack.push(gameState);
-	
+	lastUpdate = new Date().getTime();
 	frame(mainLoop);
 }
 
-function mainLoop(dt){
-	frame(mainLoop);
-	var now = window.performance.now();
-	GameStateStack.currentState().update(now - dt);
+function mainLoop(){
+	var now = new Date().getTime();
+	GameStateStack.currentState().update(now - lastUpdate);
 	GameStateStack.currentState().render();
+	lastUpdate = now;
+	frame(mainLoop);
 }
 
 init();

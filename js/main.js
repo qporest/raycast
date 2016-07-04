@@ -46,7 +46,7 @@ function Map(size){
 }
 
 Map.prototype.isEmpty = function(x, y){
-	if(x<0 || y<0 || x>=this.size || y>=this.size || this.wallGrid[x][y] == 1)
+	if(x<0 || y<0 || x>=this.size || y>=this.size || this.wallGrid[y][x] == 1)
 		return false;
 	return true;
 }

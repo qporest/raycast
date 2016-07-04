@@ -28,27 +28,28 @@ Camera.prototype.drawColumns = function(player, map){
 		distance = 0;
 		let sin = Math.sin(angle);
 		let cos = Math.cos(angle);
-		while(!collided && distance<this.range){
-			xDist = (xGrid + 1*(sin>0))*64 - origin.x;
-			yDist = (yGrid + 1*(cos<0))*64 - origin.y;
-			if((Math.abs(xDist)<Math.abs(yDist) && xDist!=0) || yDist == 0){
-				distance += xDist/sin;
-				origin.x += xDist;
-				origin.y -= xDist*cos/sin;
+		let loops = 0;
+		while(!collided && distance<this.range && loops < 50){
+			xDist = Math.abs( ((xGrid + 1*(sin>=0))*64 - origin.x)/sin );
+			yDist = Math.abs( ((yGrid + 1*(cos<=0))*64 - origin.y)/cos );
+			if(Math.abs(xDist)<=Math.abs(yDist)){
+				distance += xDist;
+				origin.x += xDist*sin;
+				origin.y -= xDist*cos;
 				collided = sin>0
 					? !map.isEmpty(xGrid+1, yGrid)
 					: !map.isEmpty(xGrid-1, yGrid);
-				xGrid = sin>0 ? xGrid + 1 : xGrid;
+				xGrid = sin>0 ? xGrid + 1 : xGrid - 1;
 			} else {
-				distance += Math.abs(yDist/cos);
-				origin.x += Math.abs(yDist/cos)*sin;
-				origin.y += yDist;
+				distance += yDist;
+				origin.x += yDist*sin;
+				origin.y += yDist*cos;
 				collided = cos>0
 					? !map.isEmpty(xGrid, yGrid-1)
 					: !map.isEmpty(xGrid, yGrid+1);
-				yGrid = cos<0 ? yGrid: yGrid + 1;
+				yGrid = cos>0 ? yGrid - 1 : yGrid + 1;
 			}
-			
+			loops++;
 		}
 		if(collided){
 			ctx.beginPath();
